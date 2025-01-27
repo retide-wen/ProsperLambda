@@ -1,24 +1,27 @@
+using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using Newtonsoft.Json;
 
-// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-
-namespace ProsperLambda
+public class Function
 {
-    public class Function
+    public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
     {
+        ///var task = JsonConvert.DeserializeObject<Task>(request.Body);
+        //task.Id = Guid.NewGuid().ToString();
+        ///task.CreatedAt = DateTime.UtcNow.ToString("o");
 
-        /// <summary>
-        /// A simple function that takes a string and returns both the upper and lower case version of the string.
-        /// </summary>
-        /// <param name="input">The event for the Lambda function handler to process.</param>
-        /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
-        /// <returns></returns>
-        public Casing FunctionHandler(string input, ILambdaContext context)
+        //using var client = new AmazonDynamoDBClient();
+        //var table = Table.LoadTable(client, "Tasks");
+        //await table.PutItemAsync(task);
+
+        await Task.Delay(1000);
+
+        return new APIGatewayProxyResponse
         {
-            return new Casing(input.ToLower(), input.ToUpper());
-        }
+            StatusCode = 200,
+            Body = "this is from my testing Lambda",
+            Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+        };
     }
-
-    public record Casing(string Lower, string Upper);
 }
+
