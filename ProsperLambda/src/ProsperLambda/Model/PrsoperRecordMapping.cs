@@ -1,5 +1,4 @@
-﻿using System;
-using CsvHelper.Configuration;
+﻿using CsvHelper.Configuration;
 
 namespace ProsperLambda.Model
 {

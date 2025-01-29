@@ -7,9 +7,9 @@ namespace ProsperLambda.Model
     [DynamoDBTable("YourTableName")]
     public class ProsperRecord
     {
+        public string? Rating { get; set; }
         [DynamoDBHashKey]
         public string? NoteID { get; set; }
-        public string? Rating { get; set; }
         public string? InvestmentAmount { get; set; }
         public string? Term { get; set; }
         public DateTime PurchaseDate { get; set; }
