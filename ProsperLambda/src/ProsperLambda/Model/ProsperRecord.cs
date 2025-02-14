@@ -4,7 +4,7 @@
 
 namespace ProsperLambda.Model
 {
-    [DynamoDBTable("YourTableName")]
+    [DynamoDBTable("ProsperNote")]
     public class ProsperRecord
     {
         public string? Rating { get; set; }

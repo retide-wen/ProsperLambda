@@ -10,7 +10,6 @@ using CsvHelper.Configuration;
 using Newtonsoft.Json;
 using ProsperLambda.Model;
 
-
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace ProsperLambda
@@ -52,9 +51,6 @@ namespace ProsperLambda
 
             try
             {
-
-
-
                 byte[] csvBytes = Convert.FromBase64String(payLoadRequest.CSVBase64EncodedString);
 
                 using (var memoryStream = new MemoryStream(csvBytes))
@@ -64,16 +60,16 @@ namespace ProsperLambda
                     HeaderValidated = null,
                     MissingFieldFound = null
                 }))
-                { 
+                {
                     csv.Context.RegisterClassMap<PrsoperRecordMapping>();
-                    IEnumerable<ProsperRecord> records = csv.GetRecords<ProsperRecord>();
+                    var records = csv.GetRecords<ProsperRecord>().ToList();
                     foreach (var record in records)
                     {
                         await _context.SaveAsync(record);
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return new APIGatewayProxyResponse
                 {
@@ -85,11 +81,10 @@ namespace ProsperLambda
 
             return new APIGatewayProxyResponse
             {
-                StatusCode = 200,
-                Body = "this is from my testing Lambda",
+                StatusCode = 202,
+                Body = "Request accepted for processing",
                 Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
             };
         }
     }
 }
-
