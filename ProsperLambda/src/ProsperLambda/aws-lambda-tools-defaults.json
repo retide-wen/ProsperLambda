@@ -15,7 +15,7 @@
     "image-command"        : "ProsperLambda::ProsperLambda.Function::FunctionHandler",
     "docker-host-build-output-dir" : "./bin/Release/lambda-publish",
     "framework"                    : "net8.0",
-    "function-name"                : "Notes",
+    "function-name"                : "ProsperNotesLambda",
     "function-description"         : "",
     "function-handler"             : "ProsperLambda::ProsperLambda.Function::FunctionHandler",
     "function-role"                : "arn:aws:iam::528757812782:role/service-role/ProsperLambda-role-02049yd8",

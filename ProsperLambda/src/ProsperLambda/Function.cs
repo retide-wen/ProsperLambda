@@ -3,7 +3,7 @@ using System.Text;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2.DocumentModel;
-using Amazon.Lambda.APIGatewayEvents;
+using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -25,33 +25,16 @@ namespace ProsperLambda
             _context = new DynamoDBContext(_dynamoDbClient);
         }
 
-        public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
+        public async Task<string> FunctionHandler(PayLoadRequest request, ILambdaContext context)
         {
-            if (request.Body == null)
+            if (request.CSVBase64EncodedString == null)
             {
-                return new APIGatewayProxyResponse
-                {
-                    StatusCode = 400,
-                    Body = "Bad Request. The Request Body is empty",
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-                };
-            }
-
-            PayLoadRequest? payLoadRequest = JsonConvert.DeserializeObject<PayLoadRequest>(request.Body);
-
-            if (payLoadRequest == null || payLoadRequest.CSVBase64EncodedString == null)
-            {
-                return new APIGatewayProxyResponse
-                {
-                    StatusCode = 400,
-                    Body = "Bad Request. CSV is missing",
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-                };
+                return "Bad Request. CSV is missing";
             }
 
             try
             {
-                byte[] csvBytes = Convert.FromBase64String(payLoadRequest.CSVBase64EncodedString);
+                byte[] csvBytes = Convert.FromBase64String(request.CSVBase64EncodedString);
 
                 using (var memoryStream = new MemoryStream(csvBytes))
                 using (var reader = new StreamReader(memoryStream, Encoding.UTF8))
@@ -71,20 +54,11 @@ namespace ProsperLambda
             }
             catch (Exception ex)
             {
-                return new APIGatewayProxyResponse
-                {
-                    StatusCode = 400,
-                    Body = $"ex= {ex}",
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-                };
+                context.Logger.LogLine($"Error: {ex.Message}");
+                return "Internal Server Error";
             }
 
-            return new APIGatewayProxyResponse
-            {
-                StatusCode = 202,
-                Body = "Request accepted for processing",
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-            };
+            return "Success";
         }
     }
 }
