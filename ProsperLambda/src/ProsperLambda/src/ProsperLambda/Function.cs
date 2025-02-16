@@ -34,47 +34,52 @@ namespace ProsperLambda
         {
             context.Logger.LogLine("FunctionHandler invoked");
 
+            APIGatewayProxyResponse response;
+
             if (request == null || string.IsNullOrEmpty(request.Body))
             {
                 context.Logger.LogLine("Invalid request: request body is null or empty");
-                return new APIGatewayProxyResponse
+                response = new APIGatewayProxyResponse
                 {
                     StatusCode = 400,
                     Body = "Invalid request: request body is null or empty",
                     Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
                 };
             }
-
-            try
+            else
             {
-                var config = new DynamoDBOperationConfig
+                try
                 {
-                    OverrideTableName = "ProsperNote"
-                };
-                var conditions = new List<ScanCondition>();
-                // you can add scan conditions, or leave empty
-                List<ProsperRecord> allRecords = await _context.ScanAsync<ProsperRecord>(conditions, config).GetRemainingAsync();
+                    var config = new DynamoDBOperationConfig
+                    {
+                        OverrideTableName = "ProsperNote"
+                    };
+                    var conditions = new List<ScanCondition>();
+                    // you can add scan conditions, or leave empty
+                    List<ProsperRecord> allRecords = await _context.ScanAsync<ProsperRecord>(conditions, config).GetRemainingAsync();
 
-                var response = new APIGatewayProxyResponse
-                {
-                    StatusCode = 200,
-                    Body = JsonConvert.SerializeObject(allRecords),
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-                };
+                    response = new APIGatewayProxyResponse
+                    {
+                        StatusCode = 200,
+                        Body = JsonConvert.SerializeObject(allRecords),
+                        Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                    };
 
-                context.Logger.LogLine("FunctionHandler completed successfully");
-                return response;
-            }
-            catch (Exception ex)
-            {
-                context.Logger.LogError($"Error processing request: {ex.Message}");
-                return new APIGatewayProxyResponse
+                    context.Logger.LogLine("FunctionHandler completed successfully");
+                }
+                catch (Exception ex)
                 {
-                    StatusCode = 500,
-                    Body = "Internal server error",
-                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-                };
+                    context.Logger.LogError($"Error processing request: {ex.Message}");
+                    response = new APIGatewayProxyResponse
+                    {
+                        StatusCode = 500,
+                        Body = "Internal server error",
+                        Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                    };
+                }
             }
+
+            return response;
         }
     }
 

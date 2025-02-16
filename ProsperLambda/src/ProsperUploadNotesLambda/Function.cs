@@ -28,44 +28,50 @@ namespace ProsperUploadNotesLambda
 
         public async Task<string> FunctionHandler(PayLoadRequest request, ILambdaContext context)
         {
+            string responseMessage;
+
             if (request.CSVBase64EncodedString == null)
             {
-                return "Bad Request. CSV is missing";
+                responseMessage = "Bad Request. CSV is missing";
             }
-
-            try
+            else
             {
-                byte[] csvBytes = Convert.FromBase64String(request.CSVBase64EncodedString);
-
-                using (var memoryStream = new MemoryStream(csvBytes))
-                using (var reader = new StreamReader(memoryStream, Encoding.UTF8))
-                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+                try
                 {
-                    HeaderValidated = null,
-                    MissingFieldFound = null
-                }))
-                {
-                    csv.Context.RegisterClassMap<PrsoperRecordMapping>();
-                    var records = csv.GetRecords<ProsperRecord>().ToList();
+                    byte[] csvBytes = Convert.FromBase64String(request.CSVBase64EncodedString);
 
-                    var config = new DynamoDBOperationConfig
+                    using (var memoryStream = new MemoryStream(csvBytes))
+                    using (var reader = new StreamReader(memoryStream, Encoding.UTF8))
+                    using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
                     {
-                        OverrideTableName = "ProsperNote"
-                    };
+                        HeaderValidated = null,
+                        MissingFieldFound = null
+                    }))
+                    {
+                        csv.Context.RegisterClassMap<PrsoperRecordMapping>();
+                        var records = csv.GetRecords<ProsperRecord>().ToList();
 
-                    foreach (var record in records)
-                    {
-                        await _context.SaveAsync(record, config);
+                        var config = new DynamoDBOperationConfig
+                        {
+                            OverrideTableName = "ProsperNote"
+                        };
+
+                        foreach (var record in records)
+                        {
+                            await _context.SaveAsync(record, config);
+                        }
                     }
+
+                    responseMessage = "Success";
+                }
+                catch (Exception ex)
+                {
+                    context.Logger.LogLine($"Error: {ex.Message}");
+                    responseMessage = "Internal Server Error";
                 }
             }
-            catch (Exception ex)
-            {
-                context.Logger.LogLine($"Error: {ex.Message}");
-                return "Internal Server Error";
-            }
 
-            return "Success";
+            return responseMessage;
         }
     }
 }
