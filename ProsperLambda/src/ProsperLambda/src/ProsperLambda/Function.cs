@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
-using Amazon.DynamoDBv2.DocumentModel;
+
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Newtonsoft.Json;
@@ -18,32 +16,66 @@ namespace ProsperLambda
 
         public Function()
         {
-            _dynamoDbClient = new AmazonDynamoDBClient();
-            _context = new DynamoDBContext(_dynamoDbClient);
+            try
+            {
+                LambdaLogger.Log("Initializing DynamoDB client and context");
+                _dynamoDbClient = new AmazonDynamoDBClient();
+                _context = new DynamoDBContext(_dynamoDbClient);
+                LambdaLogger.Log("Initialization successful");
+            }
+            catch (Exception ex)
+            {
+                LambdaLogger.Log($"Initialization error: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
         {
-            string tableName = "YourDynamoDBTableName"; // Replace with your DynamoDB table name
+            context.Logger.LogLine("FunctionHandler invoked");
 
-            var table = Table.LoadTable(_dynamoDbClient, tableName);
-            var scanFilter = new ScanFilter();
-            var search = table.Scan(scanFilter);
-
-            List<Document> documentList = new List<Document>();
-            while (!search.IsDone)
+            if (request == null || string.IsNullOrEmpty(request.Body))
             {
-                documentList.AddRange(await search.GetNextSetAsync());
+                context.Logger.LogLine("Invalid request: request body is null or empty");
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = 400,
+                    Body = "Invalid request: request body is null or empty",
+                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                };
             }
 
-            var response = new APIGatewayProxyResponse
+            try
             {
-                StatusCode = 200,
-                Body = JsonConvert.SerializeObject(documentList),
-                Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
-            };
+                var config = new DynamoDBOperationConfig
+                {
+                    OverrideTableName = "ProsperNote"
+                };
+                var conditions = new List<ScanCondition>();
+                // you can add scan conditions, or leave empty
+                List<ProsperRecord> allRecords = await _context.ScanAsync<ProsperRecord>(conditions, config).GetRemainingAsync();
 
-            return response;
+                var response = new APIGatewayProxyResponse
+                {
+                    StatusCode = 200,
+                    Body = JsonConvert.SerializeObject(allRecords),
+                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                };
+
+                context.Logger.LogLine("FunctionHandler completed successfully");
+                return response;
+            }
+            catch (Exception ex)
+            {
+                context.Logger.LogError($"Error processing request: {ex.Message}");
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = 500,
+                    Body = "Internal server error",
+                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                };
+            }
         }
     }
+
 }
