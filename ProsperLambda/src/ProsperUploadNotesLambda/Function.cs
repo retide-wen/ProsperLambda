@@ -12,7 +12,7 @@ using ProsperLambda.Model;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
-namespace ProsperLambda
+namespace ProsperUploadNotesLambda
 {
     public class Function
     {
@@ -23,6 +23,7 @@ namespace ProsperLambda
         {
             _dynamoDbClient = new AmazonDynamoDBClient();
             _context = new DynamoDBContext(_dynamoDbClient);
+            
         }
 
         public async Task<string> FunctionHandler(PayLoadRequest request, ILambdaContext context)
@@ -46,9 +47,15 @@ namespace ProsperLambda
                 {
                     csv.Context.RegisterClassMap<PrsoperRecordMapping>();
                     var records = csv.GetRecords<ProsperRecord>().ToList();
+
+                    var config = new DynamoDBOperationConfig
+                    {
+                        OverrideTableName = "ProsperNote"
+                    };
+
                     foreach (var record in records)
                     {
-                        await _context.SaveAsync(record);
+                        await _context.SaveAsync(record, config);
                     }
                 }
             }

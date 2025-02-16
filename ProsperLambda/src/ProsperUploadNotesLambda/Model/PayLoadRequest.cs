@@ -10,5 +10,6 @@ namespace ProsperLambda.Model
     {
         public string? CSVBase64EncodedString { get; set; }
 
+
     }
 }
